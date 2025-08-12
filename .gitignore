@@ -1,0 +1,16 @@
+# Node/Angular
+frontend/node_modules
+frontend/dist
+frontend/.angular
+
+# Nest/Node
+backend/node_modules
+backend/dist
+
+# Docker
+db_data/
+
+# Common
+.env
+*.log
+.DS_Store
