@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model ct_roles {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(120)
+  slug       String?  @unique(map: "slug") @db.VarChar(50)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @default(now()) @db.DateTime(0)
+  users      users[]
+}
+
+model ct_accesses_points {
+  id         Int         @id @default(autoincrement()) @db.UnsignedInt
+  name       String      @db.VarChar(50)
+  slug       String?     @unique(map: "slug") @db.VarChar(50)
+  created_at DateTime?   @default(now()) @db.Timestamp(0)
+  updated_at DateTime?   @default(now()) @db.Timestamp(0)
+  dt_checks  dt_checks[]
+  users      users[]
+}
+
+model ct_cards {
+  id            Int         @id @default(autoincrement()) @db.UnsignedInt
+  serial_number String      @db.VarChar(120)
+  status_id     Int         @default(1) @db.UnsignedTinyInt
+  created_at    DateTime    @default(now()) @db.DateTime(0)
+  updated_at    DateTime    @default(now()) @db.DateTime(0)
+  ct_status     ct_status   @relation(fields: [status_id], references: [id], map: "fk_ct_cards_status")
+  td_visits     td_visits[]
+
+  @@index([status_id], map: "idx_ct_cards_status_id")
+}
+
+model ct_companies {
+  id         Int         @id @default(autoincrement()) @db.UnsignedInt
+  level      Int
+  company    String?     @unique(map: "company") @db.VarChar(50)
+  status_id  Int?        @default(1) @db.UnsignedTinyInt
+  created_at DateTime?   @default(now()) @db.Timestamp(0)
+  updated_at DateTime?   @default(now()) @db.Timestamp(0)
+  ct_status  ct_status?  @relation(fields: [status_id], references: [id], onDelete: Restrict, map: "fk_ct_companies_status")
+  td_visits  td_visits[]
+  users      users[]
+
+  @@index([status_id], map: "idx_ct_companies_status")
+}
+
+model ct_status {
+  id           Int            @id @default(autoincrement()) @db.UnsignedTinyInt
+  name         String         @db.VarChar(50)
+  slug         String?        @unique(map: "slug") @db.VarChar(50)
+  created_at   DateTime?      @default(now()) @db.Timestamp(0)
+  updated_at   DateTime?      @default(now()) @db.Timestamp(0)
+  ct_cards     ct_cards[]
+  ct_companies ct_companies[]
+  td_visits    td_visits[]
+  users        users[]
+}
+
+model ct_type_visits {
+  id         Int         @id @default(autoincrement()) @db.UnsignedInt
+  name       String      @db.VarChar(50)
+  slug       String?     @unique(map: "slug") @db.VarChar(50)
+  created_at DateTime?   @default(now()) @db.Timestamp(0)
+  updated_at DateTime?   @default(now()) @db.Timestamp(0)
+  td_visits  td_visits[]
+}
+
+model dt_checks {
+  id                 Int                 @id @default(autoincrement()) @db.UnsignedInt
+  visit_id           Int                 @db.UnsignedInt
+  access_id          Int?                @db.UnsignedInt
+  created_by         Int?                @db.UnsignedInt
+  created_at         DateTime            @default(now()) @db.Timestamp(0)
+  ct_accesses_points ct_accesses_points? @relation(fields: [access_id], references: [id], onDelete: Restrict, map: "fk_dt_checks_access")
+  users              users?              @relation(fields: [created_by], references: [id], onDelete: Restrict, map: "fk_dt_checks_created_by")
+  td_visits          td_visits           @relation(fields: [visit_id], references: [id], map: "fk_dt_checks_visit")
+
+  @@index([access_id], map: "idx_dt_checks_access_id")
+  @@index([created_by], map: "idx_dt_checks_created_by")
+  @@index([visit_id], map: "idx_dt_checks_visit_id")
+}
+
+model td_visit_photos {
+  visit_id     Int       @id @db.UnsignedInt
+  photo_blob   Bytes?    @db.MediumBlob
+  photo_mime   String?   @db.VarChar(50)
+  photo_size   Int?      @db.UnsignedInt
+  photo_sha256 Bytes?    @db.Binary(32)
+  created_by   Int?      @db.UnsignedInt
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+  updated_at   DateTime? @default(now()) @db.Timestamp(0)
+  users        users?    @relation(fields: [created_by], references: [id], map: "fk_td_visit_photos_user")
+  td_visits    td_visits @relation(fields: [visit_id], references: [id], onDelete: Cascade, map: "fk_td_visit_photos_visit")
+
+  @@index([created_by], map: "idx_td_visit_photos_created_by")
+  @@index([photo_sha256], map: "idx_td_visit_photos_sha256")
+}
+
+model td_visits {
+  id                                Int              @id @default(autoincrement()) @db.UnsignedInt
+  company_id                        Int              @db.UnsignedInt
+  user_id                           Int              @db.UnsignedInt
+  note                              String?          @db.VarChar(255)
+  name                              String           @db.VarChar(255)
+  email                             String?          @db.VarChar(100)
+  phone                             String           @db.VarChar(20)
+  type_id                           Int              @db.UnsignedInt
+  visit_company                     String?          @db.VarChar(100)
+  token                             String           @unique(map: "uq_td_visits_token") @db.Char(36)
+  token_hash                        Bytes?           @db.Binary(32)
+  card_id                           Int?             @db.UnsignedInt
+  date_input                        DateTime?        @db.DateTime(0)
+  date_out                          DateTime?        @db.DateTime(0)
+  created_by                        Int?             @db.UnsignedInt
+  status_id                         Int?             @default(1) @db.UnsignedTinyInt
+  created_at                        DateTime?        @default(now()) @db.Timestamp(0)
+  updated_at                        DateTime?        @db.Timestamp(0)
+  dt_checks                         dt_checks[]
+  td_visit_photos                   td_visit_photos?
+  ct_cards                          ct_cards?        @relation(fields: [card_id], references: [id], map: "fk_td_visits_card")
+  ct_companies                      ct_companies     @relation(fields: [company_id], references: [id], map: "fk_td_visits_company")
+  users_td_visits_created_byTousers users?           @relation("td_visits_created_byTousers", fields: [created_by], references: [id], map: "fk_td_visits_created_by")
+  ct_status                         ct_status?       @relation(fields: [status_id], references: [id], onDelete: Restrict, map: "fk_td_visits_status")
+  ct_type_visits                    ct_type_visits   @relation(fields: [type_id], references: [id], map: "fk_td_visits_type")
+  users_td_visits_user_idTousers    users            @relation("td_visits_user_idTousers", fields: [user_id], references: [id], map: "fk_td_visits_user")
+
+  @@index([card_id], map: "idx_td_visits_card_id")
+  @@index([company_id], map: "idx_td_visits_company_id")
+  @@index([created_by], map: "idx_td_visits_created_by")
+  @@index([status_id], map: "idx_td_visits_status_id")
+  @@index([token_hash], map: "idx_td_visits_token_hash")
+  @@index([type_id], map: "idx_td_visits_type_id")
+  @@index([user_id], map: "idx_td_visits_user_id")
+}
+
+model users {
+  id                                    Int                 @id @default(autoincrement()) @db.UnsignedInt
+  name                                  String              @db.VarChar(255)
+  username                              String?             @db.VarChar(255)
+  email                                 String              @db.VarChar(255)
+  password                              String              @db.VarChar(255)
+  remember_token                        String?             @db.VarChar(100)
+  role_id                               Int?
+  company_id                            Int?                @db.UnsignedInt
+  department                            String?             @db.VarChar(100)
+  phone                                 String?             @db.VarChar(20)
+  access_id                             Int?                @db.UnsignedInt
+  created_by                            Int?                @db.UnsignedTinyInt
+  status_id                             Int?                @default(1) @db.UnsignedTinyInt
+  created_at                            DateTime?           @db.Timestamp(0)
+  updated_at                            DateTime?           @db.Timestamp(0)
+  dt_checks                             dt_checks[]
+  td_visit_photos                       td_visit_photos[]
+  td_visits_td_visits_created_byTousers td_visits[]         @relation("td_visits_created_byTousers")
+  td_visits_td_visits_user_idTousers    td_visits[]         @relation("td_visits_user_idTousers")
+  ct_accesses_points                    ct_accesses_points? @relation(fields: [access_id], references: [id], onDelete: Restrict, map: "fk_users_access")
+  ct_companies                          ct_companies?       @relation(fields: [company_id], references: [id], map: "fk_users_company")
+  ct_roles                              ct_roles?           @relation(fields: [role_id], references: [id], map: "fk_users_role")
+  ct_status                             ct_status?          @relation(fields: [status_id], references: [id], onDelete: Restrict, map: "fk_users_status")
+
+  @@index([access_id], map: "idx_users_access_id")
+  @@index([company_id], map: "idx_users_company_id")
+  @@index([role_id], map: "idx_users_role_id")
+  @@index([status_id], map: "idx_users_status_id")
+}

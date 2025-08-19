@@ -14,3 +14,7 @@ db_data/
 .env
 *.log
 .DS_Store
+
+/generated/prisma
+
+/generated/prisma
