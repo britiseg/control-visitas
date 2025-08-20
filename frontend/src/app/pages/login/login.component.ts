@@ -9,7 +9,7 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'], // 👈 plural
+  styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent {
   email = 'admin@example.com';
@@ -19,16 +19,28 @@ export class LoginComponent {
 
   constructor(private auth: AuthService, private router: Router) {}
 
+  // ...
   submit() {
     this.loading = true;
     this.error = '';
+
     this.auth.login(this.email, this.password).subscribe({
       next: (res) => {
+        console.log('[login] respuesta', res);
         this.auth.saveToken(res.access_token);
-        this.router.navigateByUrl('/'); // irá a dashboard (protegido por guard)
+        console.log('[login] token guardado?', this.auth.token);
+
+        // navega al dashboard
+        this.router.navigateByUrl('/').then((ok) => {
+          if (!ok) {
+            console.warn('[login] navigateByUrl falló; usando fallback');
+            window.location.assign('/'); // fallback duro
+          }
+        });
       },
       error: (err) => {
-        this.error = err?.error?.message ?? 'Error de autenticación';
+        console.error('[login] error', err);
+        this.error = err?.error?.message ?? 'Credenciales inválidas';
         this.loading = false;
       },
     });
