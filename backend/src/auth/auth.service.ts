@@ -10,12 +10,10 @@ export class AuthService {
     private jwt: JwtService,
   ) {}
 
-  async login(identifier: string, password: string) {
+  async login(email: string, password: string) {
     // identifier puede ser email o username
     const user = await this.prisma.users.findFirst({
-      where: {
-        OR: [{ email: identifier }, { username: identifier }],
-      },
+      where: { email }, // ahora sí es whereUniqueInput
       include: {
         ct_roles: true,
         ct_status: true,
